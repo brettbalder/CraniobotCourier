@@ -1,9 +1,9 @@
- %% GUI Initializers
+%% GUI Initializers
 function varargout = CraniobotCourier(varargin)
 % IDK what this function does, but don't delete it
 
 % CRANIOBOTCOURIER MATLAB code for CraniobotCourier.fig
-% Last Modified by GUIDE v2.5 16-Apr-2018 12:27:32
+% Last Modified by GUIDE v2.5 24-May-2018 10:51:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -24,7 +24,6 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end 
 end
-
 function CraniobotCourier_OpeningFcn(hObject, eventdata, handles, varargin)
 % Objective: Initializes the GUI and many of its persistent variables, all of
 % which are stored in the 'handles' structue
@@ -34,21 +33,6 @@ function CraniobotCourier_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - tof be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to CraniobotCourier (see VARARGIN)
-
-% Place all panels/objects in the appropriate tabs
-tabgp = uitabgroup(hObject);
-controlTab = uitab(tabgp,'Title','Control',...
-               'Tag','controlTab');
-set(handles.connectionPanel,'Parent',controlTab);
-set(handles.machinePositionPanel,'Parent',controlTab);
-set(handles.fileManagerPanel,'Parent',controlTab);
-set(handles.MotionButtonsGrp,'Parent',controlTab);
-set(handles.commonCommandsGrp,'Parent',controlTab);
-set(handles.commandLine,'Parent',controlTab);
-set(handles.commandLineTextBox,'Parent',controlTab);
-set(handles.consoleWindow,'Parent',controlTab);
-set(handles.consoleTextBox,'Parent',controlTab);
-set(handles.clearWindow,'Parent',controlTab);
 
 % Choose default command line output for CraniobotCourier
 handles.output = hObject;
@@ -96,11 +80,26 @@ stateString = {'Machine State:',handles.stat};
 set(handles.machinePositionTextBox,'String',positionString);
 set(handles.machineStateTextBox,'String',stateString);
 
+% initialize selected tool variable and tool offsets
+handles.toolDescriptions = [
+    "No Tool";
+    "Probe";
+    "1/16"" Dia. 2F Fish Tail Upcut (Blue)";
+    "1/8"" Dia. 2F Fish Tail Upcut (Teal)";
+    "1/8"" Dia. 2F Straight (Black)";
+    "1/8"" Dia. 2F Sprial Upcut (Gray)"];
+handles.toolOffsets = [
+    0;
+    38.68;
+    20.80;
+    22.05;
+    31.96;
+    31.85];
+handles.tool = 1;
 
 % Update handles structure
 guidata(hObject, handles);
 end
-
 function varargout = CraniobotCourier_OutputFcn(hObject, eventdata, handles)
 % IDK what this function does, but don't delete it
 
@@ -129,7 +128,6 @@ portList = string(portList);
 handles.port = portList(get(hObject,'Value'));
 guidata(gcf,handles);
 end
-
 function portMenu_CreateFcn(hObject, eventdata, handles)
 % Objective: Used in the creation of the port menu list 
 % hObject    handle to portMenu (see GCBO)
@@ -140,7 +138,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function connectButton_Callback(hObject, eventdata, handles)
 % Objective: Open/close a serial connection to the Craniobot and enable buttons
 
@@ -180,6 +177,19 @@ if get(hObject,'Value')
         '-property', 'enable'), 'enable', 'on');
     % enable command line
     set(handles.commandLine,'enable','on');
+    % enable tools selection
+    set(handles.toolSelection,'enable','on');
+    set(handles.toolMenu,'enable','on');
+    
+    % send tool table offsets to the Craniobot
+    str = strcat('{',...
+    'tt1z:',num2str(handles.toolOffsets(1)),',',...
+    'tt2z:',num2str(handles.toolOffsets(2)),',',...
+    'tt3z:',num2str(handles.toolOffsets(3)),',',...
+    'tt4z:',num2str(handles.toolOffsets(4)),',',...
+    'tt5z:',num2str(handles.toolOffsets(5)),',',...
+    'tt6z:',num2str(handles.toolOffsets(6)),'}');
+    fprintf(handles.device,str);
     
 % Else, if button is switched "off"
 else
@@ -190,16 +200,18 @@ else
     % disnable control buttons when connected
     set(findall(handles.MotionButtonsGrp,...
         '-property', 'enable'), 'enable', 'off');
-    % enable common commands when connected
+    % disable common commands when connected
     set(findall(handles.commonCommandsGrp,...
         '-property', 'enable'), 'enable', 'off');
-    % enable command line
+    % disable command line
     set(handles.commandLine,'enable','off');
+    % disable tools selection
+    set(handles.toolSelection,'enable','off');
+    set(handles.toolMenu,'enable','off');
 end
 %save changes in data structure
 guidata(hObject,handles);
 end
-
 function refreshButton_Callback(hObject, eventdata, handles)
 % Objective: refreshes the list of serial objects connected to the computer
 
@@ -223,7 +235,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function commandLine_CreateFcn(hObject, eventdata, handles)
 % Objective: Creates the command line
 
@@ -237,7 +248,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function clearWindow_Callback(hObject, eventdata, handles)
 % Objective: Clears all text from the console window
 
@@ -250,7 +260,6 @@ consoleWindow = handles.consoleWindow;
 set(consoleWindow,'String',' ',...
     'Value',1);
 end
-
 function commandLine_Callback(hObject, eventdata, handles)
 % hObject    handle to commandLine (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -286,7 +295,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function linearStepSize_Callback(hObject, eventdata, handles)
 % Objective: This callback doesn't do anything since all that is needed is the string
 % stored in the textbox, which is used in the jogging buttons. But don't delete
@@ -303,7 +311,6 @@ if isempty(str2num(str))
     set(hObject,'string',1);
 end
 end
-
 function linearStepGrp_SelectionChangedFcn(hObject, eventdata, handles)
 % Objective: creates the button group that holds the units and step size
 % buttons. Its just used for ease of moving the button group in the future.
@@ -320,7 +327,6 @@ else
 end
 guidata(hObject,handles);
 end
-
 function XPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -342,7 +348,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function XMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -364,7 +369,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function YPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -385,7 +389,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function YMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -407,7 +410,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function ZPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -429,7 +431,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function ZMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -451,7 +452,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function APlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -472,7 +472,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function AMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -494,7 +493,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function BPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -516,7 +514,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function BMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -538,7 +535,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function CPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -560,7 +556,6 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function CMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
 % given axis and direction using the step size from the linearStepGrp
@@ -582,12 +577,10 @@ data{end+1} = command;
 set(consoleWindow,'String',data,...
                   'Value',length(data));
 end
-
 function MillimeterButton_Callback(hObject, eventdata, handles)
 % This callback doesn't do anything since all that is needed is the state of the
 % button. But don't delete it!
 end
-
 function InchesButton_Callback(hObject, eventdata, handles)
 % This callback doesn't do anything since all that is needed is the state of the
 % button. But don't delete it!
@@ -609,7 +602,6 @@ data{end+1} = "G28.3 X0 Y0 Z0 A0 B0 C0 (Set Origin)"; %concatenate newData with 
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function moveToOriginButton_Callback(hObject, eventdata, handles)
 % Objective: Moves all axes to their home position
 
@@ -626,7 +618,6 @@ data{end+1} = "G0 X0 Y0 Z0 A0 B0 C0 (Move to Origin)"; %concatenate newData with
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function clearButton_Callback(hObject, eventdata, handles)
 % Objective: used to clear alarms
 
@@ -645,7 +636,6 @@ data{end+1} = "$Clear (Clear Alarms)"; %concatenate newData with the old data
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function resetXButton_Callback(hObject, eventdata, handles)
 % Objective: Set the current X axis position to 0
 % hObject    handle to resetXButton (see GCBO)
@@ -665,7 +655,6 @@ set(consoleWindow,'String',data,...
            'Value',length(data));
 
 end
-
 function resetYButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetYButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -679,7 +668,6 @@ data{end+1} = "G28.3 Y0 (Reset Y Axis)"; %concatenate newData with the old data
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function resetZButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetZButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -693,7 +681,6 @@ data{end+1} = "G28.3 Z0 (Reset Z Axis)"; %concatenate newData with the old data
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function resetAButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetAButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -707,7 +694,6 @@ data{end+1} = "G28.3 A0 (Reset X Axis)"; %concatenate newData with the old data
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function resetBButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetBButton (see GCBO)
 
@@ -721,7 +707,6 @@ set(consoleWindow,'String',data,...
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 end
-
 function resetCButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetCButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -735,7 +720,6 @@ data{end+1} = "G28.3 C0 (Reset C Axis)"; %concatenate newData with the old data
 set(consoleWindow,'String',data,...
            'Value',length(data));
 end
-
 function homeAllAxes_Callback(hObject, eventdata, handles)
 % Objective: Homes all axes and sets values to 0
 
@@ -746,7 +730,7 @@ function homeAllAxes_Callback(hObject, eventdata, handles)
 fprintf(handles.device,'G28.2 X0 Y0 Z0'); %home all axes on machine
 
 end
-%% Program Generation
+%% Program Generation/Menus
 function probeMenu_Callback(hObject, eventdata, handles)
 % Objective: create window to input probing parameters and generate gcode script 
 % hObject    handle to probeMenu (see GCBO)
@@ -803,7 +787,6 @@ figHandles.probeSkullButton = uicontrol(fig,'Style','pushbutton',...
 
 guidata(fig,figHandles);
 end
-
 function millMenu_Callback(hObject, eventdata, handles)
 % Objective: create window to input milling parameters and generate gcode script 
 
@@ -846,7 +829,29 @@ figHandles.millSkullButton = uicontrol(fig,'Style','pushbutton',...
 
 guidata(fig,figHandles);
 end
+function toolMenu_Callback(hObject, eventdata, handles)
+% Objective: Allow user to see/change all tool ofsets
+% hObject    handle to toolMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
+% create new window
+fig = figure('Name','Milling Parameters',...
+    'Units','pixels',...
+    'Position',[200,200,300,125],...
+    'Tag','millWindow',...
+    'MenuBar','none',...
+    'ToolBar','none');
+figHandles = guidata(fig);
+
+table = uitable('Parent', fig,...
+    'Position', [0 0 300 125],...
+    'ColumnName',["Description" "Z Offset (mm)"],...
+    'Data',[cellstr(handles.toolDescriptions) num2cell(handles.toolOffsets)],...
+    'ColumnWidth', {180, 80},...
+    'ColumnEditable',[false true],...
+    'CellEditCallback',@toolSelection_Callback);
+end
 function probeSkullButton_Callback(hObject, eventdata, handles)
 % Objective: Take user input values for desired chamber location (in stereotaxic
 % coordinates), probe the skull, and record the xyz coordinates of each point to
@@ -873,7 +878,6 @@ else
     probeCircle(diaVal,xVal,yVal,zVal,speed);
 end
 end
-
 function millSkullButton_Callback(hObject, eventdata, handles)
 % Objective: Take the recorded skull points and generate a milling filling
 % accordingly
@@ -892,6 +896,30 @@ depth   = str2num(get(figHandles.depthTextBox,'String'));
 feedrate= str2num(get(figHandles.feedrateTextBox,'String'));
 gCodeGeneration(xVals,yVals,zVals,depth,feedrate);
 
+end
+function toolSelection_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to toolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+function toolSelection_Callback(hObject, eventdata, handles)
+% Objective: Apply tool offset to the Craniobot
+% hObject    handle to toolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.tool = string((get(hObject,'Value')));
+str = string(strcat('M6 T',handles.tool)) % change tool command
+fprintf(handles.device,str);
+str = string(strcat('G43 H',handles.tool)) % apply tool offset
+fprintf(handles.device,str); % move to new position
+guidata(gcf,handles);
 end
 %% File Manager
 function chooseFileButton_Callback(hObject, eventdata, handles)
@@ -917,7 +945,6 @@ end
 
 
 end
-
 function sendFileButton_Callback(hObject, eventdata, handles)
 % Objective: Send a G-code file to the Crabiobot using Linemode
 % protocol (see g2core wiki).
@@ -984,7 +1011,6 @@ set(findall(handles.commonCommandsGrp,...
 % enable command line
 set(handles.commandLine,'enable','on');
 end
-
 function pauseButton_Callback(hObject, eventdata, handles)
 % Objective: Change the button's text based on its state
 
@@ -999,7 +1025,6 @@ else
     fprintf(handles.device,'~');
 end
 end
-
 function cancelButton_Callback(hObject, eventdata, handles)
 % Objective: Cancel the rest of the file being sent to the Craniobot
 
@@ -1036,7 +1061,6 @@ else
                  'Value',length(data));
 end
 end
-
 function interpretJson(json)
 % Objective: This function takes in a json structure, loops through each
 % element, and will call functions depending on the elements of the json msg.
@@ -1123,7 +1147,6 @@ for i = 1:numel(fields)
     end
 end
 end
-
 function statusReportJson(SR)
 % Objective: take a struct containing a json status report (SR), extract
 % the name-value pairs, and update the GUI with relevant information. 
@@ -1216,7 +1239,6 @@ set(handles.machineStateTextBox,'String',stateString);
 % Update handles structure
 guidata(findobj(0,'Tag','GUI'), handles);
 end
-
 function updateSkullPoints(PR)
 % Objective: take a struct containing a json probe report (PR), extract the
 % name-value pair for the probed z-value, and update the skullPoints array
