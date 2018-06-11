@@ -26,7 +26,7 @@ G2core can be tricky to start using, it took me many hours of reading and googli
 
 	https://github.com/synthetos/g2/wiki
 
-And I mean everything. You will want to know all of this if you every plan on altering either the Craniobot Courier GUI or the current version of g2core that is on the Craniobot. Everything I learned about building this machine game from this wiki, so be persistent if you run into problems.
+And I mean everything. You will want to know all of this if you every plan on altering either the Craniobot Courier GUI or the current version of g2core that is on the Craniobot. Everything I learned about building this machine came from this wiki, so be persistent if you run into problems.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Compiling and Building G2core
