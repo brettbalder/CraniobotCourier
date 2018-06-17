@@ -139,6 +139,7 @@ Here is the process for MacOS
 
 If all goes well you should see something like:
 
+<<<<<<< HEAD
 Device found on cu.usbmodem1411
 Erase flash
 Write 166320 bytes to flash
@@ -147,3 +148,6 @@ Verify 166320 bytes of flash
 [==============================] 100% (650/650 pages)
 Verify successful
 Set boot flash true
+=======
+NOTE: The Arduino has to be erased before you flash it. To do so, power up the Arduino and then press and hold the "erase" button (tiny button near the middle of the board) for a second or two. If the LED stops blinking, it has been erased. If you don't do this, the bossac application will throw an error.
+>>>>>>> origin/master
