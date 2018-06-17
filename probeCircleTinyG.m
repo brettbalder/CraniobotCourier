@@ -1,4 +1,4 @@
-function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed,tool,Zmax)
+function [commandArray] = probeCircleTinyG(circDia,X,Y,Z,probeSpeed,Zmax)
     % Objective:  This function probes the skull in a circle centered on 
     % the input coordinates with a resolution 
     % of 36 points (99.5% accurate to circumcircle area). A text file with gcode 
@@ -11,16 +11,9 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed,tool,Zmax)
     % probeSpeed    Feedrate of probe towards skull (units/min)
     % tool          number of tool in tool table
     % Zmax          maximum height of work coordinate system
-
-    % Stereo2Robot transformation is the transformation from stereotax space to
-    % machine space
     
-    Stereo2Robot = [1,0,0,0;...
-                    0,1,0,0;...
-                    0,0,1,0;...
-                    0,0,0,1];
     % Create the center position variable in robot space
-    centerPos = Stereo2Robot*[X;Y;Z;1];
+    centerPos = [X;Y;Z;1];
 
     % Choose resolution of points.
     numberPoints = 6;
@@ -31,7 +24,7 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed,tool,Zmax)
     Xproj = centerPos(1) + circDia*cos(theta)/2;
     Yproj = centerPos(2) + circDia*sin(theta)/2;
     offsetVal = 2;
-    Zmin = -90; %used to define where the probe should home towards
+    Zmin = -50; %used to define where the probe should home towards
     
     % Find a safe spot above the skull to home to
     if(Z+offsetVal > Zmax)
@@ -44,8 +37,8 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed,tool,Zmax)
     fileID = fopen('probePath.txt','w');
     
     % make header commands
-    fprintf(fileID,'%s\n',strcat("N1 G90 G43 H",num2str(tool),...
-        "; (set to absolute coordinates motion and work coordinate system)"));
+    fprintf(fileID,'%s\n', strcat("N1 G90; (set to absolute coordinates motion",...
+        "and work coordinate system)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(Xproj(1)),...
             " Y",num2str(Yproj(1))));
