@@ -159,6 +159,13 @@ function firmwareSelection_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to firmwareSelection (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+%NOTE: This button has no callback. Since TinyG has no tool selection
+%capabilities, the GUI will only enable/send the tool table if g2core is
+%selected. Likewise, the functions for generating gcode (probeCircle.m and
+%millCircle.m are slightly different in that they do not account for tool
+%offset)
+
 % Hint: popupmenu controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -1031,7 +1038,7 @@ depth      = str2double(get(figHandles.depthTextBox,'String'));
 feedrate   = str2double(get(figHandles.feedrateTextBox,'String'));
 tool       = handles.tool;
 toolOffset = handles.toolTable.ToolOffset(tool);
-millProbedPoints(xVals,yVals,zVals,depth,feedrate,tool,toolOffset);
+millCircle(xVals,yVals,zVals,depth,feedrate,tool,toolOffset);
 
 end
 function toolSelection_CreateFcn(hObject, eventdata, handles)
