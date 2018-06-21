@@ -27,24 +27,20 @@ end
 function CraniobotCourier_OpeningFcn(hObject, eventdata, handles, varargin)
 % Objective: Initializes the GUI and many of its persistent variables, all of
 % which are stored in the 'handles' structue
-    
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - tof be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to CraniobotCourier (see VARARGIN)
 
 % Choose default command line output for CraniobotCourier
 handles.output = hObject;
 
 % initialize path of G-code file that is to be sent to Craniobot
-handles.filePath = " ";
+handles.filePath = {};
+handles.lastGc = "";
 
-%initialize command line cache
+% initialize command line cache (used for selecting previously issued commands)
 handles.cache = {};
 
 % initialize 2D array to store all probed points of skull in form 
-% [x1,y1,z1; x2...
+% [x1,y1,z1; 
+%  x2 y2 z2;...]
 handles.skullPoints = [];
 
 % initialize "linesToSend" value for Linemode protocol (see g2core wiki)
@@ -89,7 +85,6 @@ handles.MaxLine = 1;
 set(handles.progressBar,'String',{'Progress:',...
     strcat(num2str(100*handles.line/handles.MaxLine),'%')});
 
-
 % Read in Tool Table and initialize relevant variables
 filename = fullfile(pwd,'toolTable.csv');
 handles.toolTable = readtable(filename);
@@ -130,7 +125,7 @@ function portMenu_Callback(hObject, eventdata, handles)
 portList = get(hObject,'String');
 % convert to string. If only one line is present in portList, portList(1) will
 % just return the first letter of the device, not the first line
-portList = string(portList);  
+portList = string(portList);
 handles.port = portList(get(hObject,'Value'));
 guidata(gcf,handles);
 end
@@ -205,8 +200,7 @@ if get(hObject,'Value')
             '-property', 'enable'), 'enable', 'on');
         set(findall(handles.commonCommandsGrp,...
             '-property', 'enable'), 'enable', 'on');
-        set(findall(handles.fileManagerGrp,...
-            '-property', 'enable'), 'enable', 'on');
+        set(handles.chooseFileButton,'enable','on');
         set(handles.commandLine,'enable','on');
         set(handles.probeCircleMenu,'enable','on');
         set(handles.probeWindowMenu,'enable','on');
@@ -266,7 +260,7 @@ function refreshButton_Callback(hObject, eventdata, handles)
 % hObject    handle to refreshButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-set(handles.portMenu,'String',seriallist);
+set(handles.portMenu,'String',seriallist,'Value',1);
 end
 %% Console/Command Line
 function consoleWindow_CreateFcn(hObject, eventdata, handles)
@@ -278,7 +272,7 @@ function consoleWindow_CreateFcn(hObject, eventdata, handles)
 
 % Hint: listbox controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
-
+set(hObject,'String',{});
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -305,7 +299,7 @@ function clearWindow_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % consoleWindow     Handle to ui object
 consoleWindow = handles.consoleWindow;
-set(consoleWindow,'String',' ',...
+set(consoleWindow,'String',{},...
     'Value',1);
 end
 function commandLine_Callback(hObject, eventdata, handles)
@@ -318,14 +312,6 @@ device = handles.device;
 text = string(get(gcbo,'String'));
 handles.cache{end+1} = cellstr(text);
 set(gcbo,'String','');
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = upper(text);
-hObject.UserData = length(handles.cache); 
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 
 % send command             
 fprintf(device,upper(text));
@@ -387,16 +373,8 @@ function XPlus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' X',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 X',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function XMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -408,16 +386,8 @@ function XMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' X-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 X-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function YPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -428,16 +398,8 @@ function YPlus_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' Y',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 Y',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function YMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -449,16 +411,8 @@ function YMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' Y-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 Y-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function ZPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -470,16 +424,8 @@ function ZPlus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' Z',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 Z',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function ZMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -491,16 +437,8 @@ function ZMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' Z-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 Z-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function APlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -511,16 +449,8 @@ function APlus_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' A',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 A',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function AMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -532,16 +462,8 @@ function AMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' A-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 A-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function BPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -553,16 +475,8 @@ function BPlus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' B',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 B',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function BMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -574,16 +488,8 @@ function BMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' B-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 B-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function CPlus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -595,16 +501,8 @@ function CPlus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' C',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 C',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function CMinus_Callback(hObject, eventdata, handles)
 % Objective: Sends a gcode command to move the Craniobot incrimentally in the 
@@ -616,16 +514,8 @@ function CMinus_Callback(hObject, eventdata, handles)
 
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
-command = string(strcat('G0',' C-',stepSize));
-fprintf(handles.device,'G91'); % set to incrimental move
+command = string(strcat('G91 G0 C-',stepSize));
 fprintf(handles.device,command); % move to new position
-
-% display sent command in command window
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = command;
-set(consoleWindow,'String',data,...
-                  'Value',length(data));
 end
 function MillimeterButton_Callback(hObject, eventdata, handles)
 % This callback doesn't do anything since all that is needed is the state of the
@@ -643,14 +533,9 @@ function setOriginButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial device (Craniobot)
-% consoleWindow     Handle to ui object
 
-fprintf(handles.device,'G28.3 X0 Y0 Z0 A0 B0 C0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 X0 Y0 Z0 A0 B0 C0 (Set Origin)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,'G28.3 X0 Y0 Z0 A0 B0 C0; (Set Origin)');
+
 end
 function moveToOriginButton_Callback(hObject, eventdata, handles)
 % Objective: Moves all axes to their home position
@@ -659,14 +544,8 @@ function moveToOriginButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial device (Craniobot)
-% consoleWindow     Handle to ui object
 
-fprintf(handles.device,' G90 G0 X0 Y0 Z0 A0 B0 C0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G0 X0 Y0 Z0 A0 B0 C0 (Move to Origin)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,' G90 G0 X0 Y0 Z0 A0 B0 C0; (Move to origin)');
 end
 function clearButton_Callback(hObject, eventdata, handles)
 % Objective: used to clear alarms
@@ -677,7 +556,7 @@ function clearButton_Callback(hObject, eventdata, handles)
 
 fprintf(handles.device,'{"clear":n}');
 data = cellstr(get(handles.consoleWindow,'String'));
-data{end+1} = "$Clear (Clear Alarms)"; %concatenate newData with the old data
+data{end+1} = '{"clear":n} (Clear Alarms)'; %concatenate newData with the old data
 set(handles.consoleWindow,'String',data,...
            'Value',length(data));
 end
@@ -701,17 +580,9 @@ function resetXButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial device (Craniobot)
-% consoleWindow     Handle to ui object
-
 
 % Set controller position
-fprintf(handles.device,'G28.3 X0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 X0 (Reset X Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
-
+fprintf(handles.device,'G28.3 X0; (Reset X Axis)');
 end
 function resetYButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetYButton (see GCBO)
@@ -719,12 +590,7 @@ function resetYButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-fprintf(handles.device,'G28.3 Y0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 Y0 (Reset Y Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,'G28.3 Y0; (Reset Y Axis)');
 end
 function resetZButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetZButton (see GCBO)
@@ -732,12 +598,7 @@ function resetZButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-fprintf(handles.device,'G28.3 Z0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 Z0 (Reset Z Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,'G28.3 Z0; (Reset Z Axis)');
 end
 function resetAButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetAButton (see GCBO)
@@ -745,25 +606,15 @@ function resetAButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-fprintf(handles.device,'G28.3 A0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 A0 (Reset X Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,'G28.3 A0; (Reset A Axis)');
 end
 function resetBButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetBButton (see GCBO)
-
-% Set controller position
-fprintf(handles.device,'G28.3 B0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 B0 (Reset B Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+% Set controller position
+fprintf(handles.device,'G28.3 B0; (Reset B Axis)');
 end
 function resetCButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetCButton (see GCBO)
@@ -771,12 +622,7 @@ function resetCButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-fprintf(handles.device,'G28.3 C0');
-consoleWindow = handles.consoleWindow;
-data = cellstr(get(consoleWindow,'String'));
-data{end+1} = "G28.3 C0 (Reset C Axis)"; %concatenate newData with the old data
-set(consoleWindow,'String',data,...
-           'Value',length(data));
+fprintf(handles.device,'G28.3 C0; (Reset C Axis)');
 end
 function homeAllAxes_Callback(hObject, eventdata, handles)
 % Objective: Homes all axes and sets values to 0
@@ -785,8 +631,7 @@ function homeAllAxes_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-fprintf(handles.device,'G28.2 X0 Y0 Z0'); %home all axes on machine
-
+fprintf(handles.device,'G28.2 X0 Y0 Z0; (Home All Axes)'); %home all axes on machine
 end
 %% Program Generation/Menus
 function probeCircleMenu_Callback(hObject, eventdata, handles)
@@ -888,7 +733,7 @@ function millMenu_Callback(hObject, eventdata, handles)
 % create new window
 fig = figure('Name','Milling Parameters',...
     'Units','pixels',...
-    'Position',[200,200,400,150],...
+    'Position',[200,200,400,200],...
     'NumberTitle','off',...
     'Tag','millWindow',...
     'MenuBar','none',...
@@ -898,11 +743,20 @@ figHandles = guidata(fig);
 % create window elements
 figHandles.depthLabel = uicontrol(fig,'Style','text',...
     'Units','pixels',...
-    'String','Skull Thickness (mm)',...
-    'Position',[5,120,150,20]);
+    'String','Depth per Pass (mm)',...
+    'Position',[5,150,150,20]);
 figHandles.depthTextBox = uicontrol(fig,'Style','edit',...
     'Units','pixels',...
-    'Tag','chamberDiameterTextBox',...
+    'Tag','depthTextBox',...
+    'Position',[200,150,50,20]);
+
+figHandles.thicknessLabel = uicontrol(fig,'Style','text',...
+    'Units','pixels',...
+    'String','Skull Thickness (mm)',...
+    'Position',[5,120,150,20]);
+figHandles.thicknessTextBox = uicontrol(fig,'Style','edit',...
+    'Units','pixels',...
+    'Tag','thicknessTextBox',...
     'Position',[200,120,50,20]);
 
 figHandles.feedrateLabel = uicontrol(fig,'Style','text',...
@@ -993,6 +847,7 @@ else
     handles = guidata(GUI); % get GUI handles (not probe menu handles)
     tool    = handles.tool;
     Zmax    = -handles.toolTable.ToolOffset(tool);
+    close;
     if handles.firmwareSelection == 1
         probeCircleTinyG(diaVal,xVal,yVal,zVal,speed,tool,Zmax);
     else
@@ -1011,7 +866,8 @@ if isempty(max_steps)
     uiwait( errordlg('Missing input parameter...',...
                      'Input Error', 'modal') );
 else
-pointGen(max_steps);
+    close
+    pointGen(max_steps);
 end
 end
 function millSkullButton_Callback(hObject, eventdata, handles)
@@ -1021,18 +877,30 @@ function millSkullButton_Callback(hObject, eventdata, handles)
 % hObject    handle to probeSkullButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 figHandles = guidata(findobj(0,'Tag','millWindow')); % get handles 
 handles    = guidata(findobj(0,'Tag','GUI'));
-xVals      = handles.skullPoints(:,1);
-yVals      = handles.skullPoints(:,2);
-zVals      = handles.skullPoints(:,3);
-depth      = str2double(get(figHandles.depthTextBox,'String'));
-feedrate   = str2double(get(figHandles.feedrateTextBox,'String'));
-tool       = handles.tool;
-toolOffset = handles.toolTable.ToolOffset(tool);
-millProbedPoints(xVals,yVals,zVals,depth,feedrate,tool,toolOffset);
 
+if isempty(handles.skullPoints)
+    uiwait( errordlg('Skull has not been probed yet.',...
+                     'Input Error', 'modal') );
+else
+    xVals      = handles.skullPoints(:,1);
+    yVals      = handles.skullPoints(:,2);
+    zVals      = handles.skullPoints(:,3);
+    depth      = str2double(get(figHandles.depthTextBox,'String'));
+    thickness  = str2double(get(figHandles.thicknessTextBox,'String'));
+    feedrate   = str2double(get(figHandles.feedrateTextBox,'String'));
+    tool       = handles.tool;
+    toolOffset = handles.toolTable.ToolOffset(tool);
+    
+    if isempty(depth) || isempty(thickness) || isempty(feedrate)
+        uiwait( errordlg('Missing input parameter...',...
+                         'Input Error', 'modal') );
+    else
+        close;
+        millProbedPoints(xVals,yVals,zVals,thickness,depth,feedrate,tool,toolOffset);
+    end
+end
 end
 function toolSelection_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to toolSelection (see GCBO)
@@ -1051,14 +919,14 @@ function toolSelection_Callback(hObject, eventdata, handles)
 % hObject    handle to toolSelection (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-%{
+
 handles.tool = (get(hObject,'Value'));
 str = string(strcat('M6 T',num2str(handles.tool))); % change tool command
 fprintf(handles.device,str);
 str = string(strcat('G43 H',num2str(handles.tool))); % apply tool offset
 fprintf(handles.device,str); % move to new position
 guidata(gcf,handles);
-%}
+
 end
 %% File Manager
 function chooseFileButton_Callback(hObject, eventdata, handles)
@@ -1077,8 +945,6 @@ if tempName ~= 0
     handles.filePath = strcat(tempPath,tempName);
     set(handles.fileTextBox,'String',tempName);
     set(handles.sendFileButton,'enable','on');
-    set(handles.pauseButton,'enable','on');
-    set(handles.abortButton,'enable','on');
     fid = fopen(handles.filePath);
     lines = textscan(fid,'%s','delimiter','\n');
     fclose(fid);
@@ -1093,68 +959,74 @@ function sendFileButton_Callback(hObject, eventdata, handles)
 % Objective: Send a G-code file to the Crabiobot using Linemode
 % protocol (see g2core wiki).
 
-% Key Variables:
-% hObject    handle to sendFileButton (see GCBO)
-% handles    structure with handles and user data (see GUIDATA)
-
-% disable Send File button
+GUI = findobj(0,'Tag','GUI');
+% enable/disable certain features
 set(hObject,'enable','off');
-% disable control buttons when connected
 set(findall(handles.MotionButtonsGrp,...
     '-property', 'enable'), 'enable', 'off');
-% disable common commands when connected
 set(findall(handles.commonCommandsGrp,...
     '-property', 'enable'), 'enable', 'off');
-% disable command line
 set(handles.commandLine,'enable','off');
+set(handles.pauseButton,'enable','on');
+set(handles.abortButton,'enable','on');
 % restart line count
 handles.line = 0;
 % open g-code file
 prgmFile = fopen(handles.filePath);
-
+probeFile = false;
+set(gcbo,'userdata',4);
 % delete any old probed points if we are probing again
 if contains(handles.filePath,'probe')
+    probeFile = true;
+    set(gcbo,'userdata',1);
     handles = guidata(findobj(0,'Tag','GUI')); % get handles 
     handles.skullPoints = [];
-    guidata(findobj(0,'Tag','GUI'),handles);   
+    guidata(GUI,handles);   
 end
-
 % Begin file stream using Linemode Protocol
 % Continue protocol unless the file ends or the cancel button is pressed.
 % The number of lines to be send to the Craniobot is stored in the Send Button's
 % 'userdata' variable.
-set(gcbo,'userdata',4);
-
+command = {};
 while ~feof(prgmFile) && ~get(handles.abortButton,'Value')
-    % if there is room in the serial buffer AND the pause button is not 
-    % pressed AND the file is not done, send commands
-    while (get(gcbo,'userdata') > 0) && ~get(handles.pauseButton,'Value') && ~feof(prgmFile)
-        % send line
-        command = fgetl(prgmFile);
-        fprintf(handles.device,command);
-        % decrement number of lines to be sent to arduino
-        set(gcbo,'userdata',get(gcbo,'userdata')-1);
-        % print command to console window as well
-        data = cellstr(get(handles.consoleWindow,'String'));
-        data{end+1} = command; %concatenate newData with the old data
-        set(handles.consoleWindow,'String',data,...
-                'Value',length(data));
-        drawnow(); %% this allows other callbacks to execute (pause/cancel)
+    if probeFile
+        while (get(gcbo,'userdata') > 0) && ~get(handles.pauseButton,'Value') && ~feof(prgmFile)% && ~handles.lnRead
+            % send line
+            command = fgetl(prgmFile);
+            fprintf(handles.device,command);
+            if feof(prgmFile)
+                break;
+            end
+            set(gcbo,'userdata',get(gcbo,'userdata')-1);
+            drawnow(); 
+        end
+        drawnow();      
+    else
+        while (get(gcbo,'userdata') > 0) && ~get(handles.pauseButton,'Value') && ~feof(prgmFile)
+            % send line
+            command = fgetl(prgmFile);
+            fprintf(handles.device,command);
+            if feof(prgmFile)
+                break;
+            end
+            % decrement number of lines to be sent to arduino
+            set(gcbo,'userdata',get(gcbo,'userdata')-1);
+            drawnow(); 
+        end
+        drawnow();
     end
-    drawnow(); %% this allows other callbacks to execute (pause/cancel)
 end
-
 fclose(prgmFile);
 set(gcbo,'enable','on','Value',0); % reset Send File button
 set(handles.abortButton,'Value',0);
-% enable control buttons when connected
+% re-enable/disable control buttons when connected
 set(findall(handles.MotionButtonsGrp,...
     '-property', 'enable'), 'enable', 'on');
-% enable common commands when connected
 set(findall(handles.commonCommandsGrp,...
     '-property', 'enable'), 'enable', 'on');
-% enable command line
 set(handles.commandLine,'enable','on');
+set(handles.pauseButton,'enable','off');
+set(handles.abortButton,'enable','off');
 end
 function pauseButton_Callback(hObject, eventdata, handles)
 % Objective: Change the button's text based on its state
@@ -1233,7 +1105,6 @@ elseif strcmp(eventdata.Key,'downarrow')
     cl.UserData = min(cm, cl.UserData + 1);
     guidata(hObject, handles);
 end
-
 end
 %% Auxillary
 function BytesAvailable(device,~)
@@ -1286,28 +1157,38 @@ for i = 1:numel(fields)
     if ~isempty(json.(fields{i}))
         switch fields{i}
             case 'r'   % Reports
-                % if g2core sends a json report, increment the Send Button's 
+                % If the controller sends a json report, increment the Send Button's 
                 % 'userdata' variable (aka, the Linemode protocol's linesToSend
-                % variable (used in sendFileButton_Callback))
+                % variable (used in sendFileButton_Callback)).
                 SendButton = findobj(gcf,'Tag','sendFileButton');
-                if get(SendButton,'userdata') < 4
+                if get(SendButton,'userdata') < 3
                     set(SendButton,'userdata',get(SendButton,'userdata')+1);
                 end
+                    
                 % if the report has children objects, interpret them
                 if ~isempty(json.r)
                     interpretJson(json.r); 
                 end
             case 'sr'  % Status Reports
-                % If g2core sends a status report, update the GUI's system report
-                % window
+                % If the controller sends a status report, update the GUI's 
+                % system report window
                 statusReportJson(json.sr);
-            case 'gc'  % G Code (tinyG). Ignore since we don't care to see it echo
+            case 'gc'  % GCode echo
+                % Print the interpreted Gcode to the console window
+                handles.lastGc = json.gc;
+                consoleWindow = handles.consoleWindow;
+                data = cellstr(get(consoleWindow,'String'));
+                data{end+1} = handles.lastGc;
+                set(consoleWindow,'String',data,...
+                                  'Value',length(data));
             case 'n'   % Line number response (tinyG).
+                % If line number are present in a gcode file, use them to
+                % calculate file completion
                 handles.line = json.(fields{i});
                 set(handles.progressBar,'String',{'Progress:',...
                 strcat(num2str(100*handles.line/handles.MaxLine),'%')});
             case 'prb' % Probe Reports
-                % If g2core sends a probe report, update the skullPoints array
+                % If the controller sends a probe report, update the skullPoints array
                 updateSkullPoints(json.prb);
             case 'f'   % Footers 
                 % Display status (f is a 1x3 array; element 2 is the status number
@@ -1328,7 +1209,7 @@ for i = 1:numel(fields)
                 set(handles.consoleWindow,'String',data,...
                              'Value',length(data));
             otherwise  % Any other information is probably relevant to the user,
-                      % so we print every name-value pair in message
+                       % so we print every name-value pair in message
                 % iterate through every name-value pair in message
                 name = fields{i};
                 value = json.(fields{i});
@@ -1406,7 +1287,7 @@ for i = 1:numel(SRfields)
                     % looks better
                     handles.stat = "READY";
                 case 4
-                    handles.stat = "PROGRAM_END";
+                    handles.stat = "PROGRAM END";
                 case 5
                     handles.stat = "RUN";
                 case 6
@@ -1441,6 +1322,8 @@ if handles.units == 1
 else
     units = 'Work Position (inch):';
 end
+
+guidata(findobj(0,'Tag','GUI'), handles);
 
 xStr = strcat('X:',32,num2str(handles.posx));
 yStr = strcat('Y:',32,num2str(handles.posy));

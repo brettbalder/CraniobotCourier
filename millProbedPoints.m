@@ -1,4 +1,4 @@
-function millProbedPoints(X,Y,Z,skullThickness,feedrate,tool,toolOffset)
+function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
     % Objective: The user enters the desired location for a circular plug to be
     % milled on a skull in stereotax coordinates. The thickness of the skull and
     % probe feedrate are also input. This function then probes the skull in a
@@ -12,9 +12,17 @@ function millProbedPoints(X,Y,Z,skullThickness,feedrate,tool,toolOffset)
     % feedrate      Feedrate of mill (units/min)
     % tool          number of tool in tool table
     % toolOffset    Z-axis offset of tooltip from the machine origion
-    depthPass = 0.1; % 1mm passess
     nProbedPoints = numel(X);
-    nPasses = ceil(skullThickness/depthPass);
+    nPasses = ceil(thickness/depth);
+    
+    figure('Name','Surface Map');
+    scatter3(X,Y,Z);
+    axis equal
+    xlabel('X-axis Location (mm)');
+    ylabel('Y-axis Location (mm)');
+    zlabel('Z-axis Location (mm)');
+    title(sprintf('%d Total Points',nProbedPoints));
+    
     % home is the position directly above the first probed point on the skull
     home = [X(1),Y(1),-toolOffset];  
 
@@ -31,15 +39,15 @@ function millProbedPoints(X,Y,Z,skullThickness,feedrate,tool,toolOffset)
     
     % Loop through theta by one step
     ln = 3; %line number
-    for jj = 1:nPasses
-        % Loop through each probed point on skull
-        for ii = 1:nProbedPoints
+    for j = 1:nPasses
+        % Loop through each probed point on skulz
+        for i = 1:nProbedPoints
             ln = ln+1;
             % Move to current X, Y, Home
             fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
-              " G1 X",num2str(X(ii)),...
-              " Y",num2str(Y(ii)),...
-              " Z",num2str(Z(ii)-jj*depthPass),...
+              " G1 X",num2str(X(i)),...
+              " Y",num2str(Y(i)),...
+              " Z",num2str(Z(i)-j*depth),...
               " F",num2str(feedrate)));
         end
         % Go back to the starting point of the circle so we can
@@ -48,7 +56,7 @@ function millProbedPoints(X,Y,Z,skullThickness,feedrate,tool,toolOffset)
         fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
           " G1 X",num2str(X(1)),...
           " Y",num2str(Y(1)),...
-          " Z",num2str(Z(1)-jj*depthPass),...
+          " Z",num2str(Z(1)-j*depth),...
           " F",num2str(feedrate)));
     end
     
