@@ -3,7 +3,7 @@ function varargout = CraniobotCourier(varargin)
 % IDK what this function does, but don't delete it
 
 % CRANIOBOTCOURIER MATLAB code for CraniobotCourier.fig
-% Last Modified by GUIDE v2.5 18-Jun-2018 12:41:00
+% Last Modified by GUIDE v2.5 02-Jul-2018 12:34:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -634,6 +634,21 @@ function homeAllAxes_Callback(hObject, eventdata, handles)
 fprintf(handles.device,'G28.2 X0 Y0 Z0; (Home All Axes)'); %home all axes on machine
 end
 %% Program Generation/Menus
+function ProbingMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to ProbingMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.skullPoints)
+    set(handles.clearSet1,'enable','off');
+else
+    set(handles.clearSet1,'enable','on');
+end
+end
+function MillingMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to MillingMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
 function probeCircleMenu_Callback(hObject, eventdata, handles)
 % Objective: create window to input probing parameters and generate gcode script 
 % hObject    handle to probeCircleMenu (see GCBO)
@@ -722,6 +737,13 @@ figHandles.probeSkullButton = uicontrol(fig,'Style','pushbutton',...
     'Callback',@probeWindowButton_Callback);
 
 guidata(fig,figHandles);
+end
+function clearSet1_Callback(hObject, eventdata, handles)
+% hObject    handle to clearSet1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.skullPoints = [];
+guidata(hObject,handles);
 end
 function millMenu_Callback(hObject, eventdata, handles)
 % Objective: create window to input milling parameters and generate gcode script 
@@ -975,12 +997,12 @@ handles.line = 0;
 prgmFile = fopen(handles.filePath);
 probeFile = false;
 set(gcbo,'userdata',4);
-% delete any old probed points if we are probing again
+
+% change procedure slightly if running a probing file
 if contains(handles.filePath,'probe')
     probeFile = true;
     set(gcbo,'userdata',1);
     handles = guidata(findobj(0,'Tag','GUI')); % get handles 
-    handles.skullPoints = [];
     guidata(GUI,handles);   
 end
 % Begin file stream using Linemode Protocol
