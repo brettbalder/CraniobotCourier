@@ -1,17 +1,14 @@
-function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
-    % Objective: The user enters the desired location for a circular plug to be
-    % milled on a skull in stereotax coordinates. The thickness of the skull and
-    % probe feedrate are also input. This function then probes the skull in a
-    % circle centered on the input coordinates with a resolution of 36 points
-    % (99.5% accurate to circumcircle area). A text file with gcode is then
-    % output which may then be sent to the Craniobot.
+function millProbedPoints(X,Y,Z,thickness,depth,feedrate)
+    % Objective: After probing the skull, the user can generate a Gcode program for
+    % milling the probed points.
     %
     % Variables:
     % X,Y,Z         Column vectors of probed x,y, and z coordinates of skull in
     %                   work coordinates
     % feedrate      Feedrate of mill (units/min)
-    % tool          number of tool in tool table
-    % toolOffset    Z-axis offset of tooltip from the machine origion
+    % thickenss     thickness of material
+    % depth         depth per pass of mill
+
     nProbedPoints = numel(X);
     nPasses = ceil(thickness/depth);
     
@@ -24,14 +21,14 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
     title(sprintf('%d Total Points',nProbedPoints));
     
     % home is the position directly above the first probed point on the skull
-    home = [X(1),Y(1),-toolOffset];  
+    home = [X(1),Y(1),Z(1)+2];  
 
     % create .txt file to store path
     fileID = fopen('millingPath.txt','w');
 
     % make header commands
-    fprintf(fileID,'%s\n',strcat("N1 G90 G43 H",num2str(tool),...
-        "; (set to absolute coordinates motion and work coordinate system)"));
+    fprintf(fileID,'%s\n',strcat("N1 G90; ",...
+        "(set to absolute coordinates motion and work coordinate system)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(home(1)),...
       " Y",num2str(home(2)),...
@@ -47,7 +44,7 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
             fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
               " G1 X",num2str(X(i)),...
               " Y",num2str(Y(i)),...
-              " Z",num2str(Z(i)-j*depth),...
+              " Z",num2str(Z(i)-min(j*depth,thickness)),...
               " F",num2str(feedrate)));
         end
         % Go back to the starting point of the circle so we can
@@ -56,7 +53,7 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
         fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
           " G1 X",num2str(X(1)),...
           " Y",num2str(Y(1)),...
-          " Z",num2str(Z(1)-j*depth),...
+          " Z",num2str(Z(1)-min(j*depth,thickness)),...
           " F",num2str(feedrate)));
     end
     
@@ -70,10 +67,10 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate,tool,toolOffset)
     % make footer commands
     ln = ln+1;
     fprintf(fileID,'%s\n',strcat("N", num2str(ln),...
-        " G0 Z",num2str(-toolOffset),"; (Retract)"));
+        " G0 Z0; (Retract)"));
     ln = ln+1;
     fprintf(fileID,'%s\n',strcat("N", num2str(ln),...
-        " G0 X0 Y0 Z",num2str(-toolOffset)," A0 B0 C0; (Go to home)"));
+        " G0 X0 Y0 Z0 A0 B0 C0; (Go to home)"));
     ln = ln+1;
     fprintf(fileID,'%s\n',strcat("N", num2str(ln)," M2; (Program Complete)"));
     fclose(fileID);

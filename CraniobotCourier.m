@@ -88,15 +88,6 @@ set(handles.progressBar,'String',{'Progress:',...
 % Read in Tool Table and initialize relevant variables
 filename = fullfile(pwd,'toolTable.csv');
 handles.toolTable = readtable(filename);
-handles.tool = 1; % selected tool (Default is No Tool)
-
-% Update list to Selected Tool Button
-str = {};
-for i = 1:32
-    desc = handles.toolTable.Description(i);
-    str(i) = strcat(num2str(i),{' - '},desc);
-end
-set(handles.toolSelection,'String',str);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -135,27 +126,6 @@ function portMenu_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 set(hObject,'String',seriallist);
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-function firmwareSelection_Callback(hObject, eventdata, handles)
-% hObject    handle to firmwareSelection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-%NOTE: This button has no callback. Since TinyG has no tool selection
-%capabilities, the GUI will only enable/send the tool table if g2core is
-%selected. Likewise, the functions for generating gcode (probeCircle.m and
-%millProbedPoints.m are slightly different in that they do not account for tool
-%offset)
-end
-function firmwareSelection_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to firmwareSelection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -205,27 +175,13 @@ if get(hObject,'Value')
         set(handles.probeCircleMenu,'enable','on');
         set(handles.probeWindowMenu,'enable','on');
         set(handles.millMenu,'enable','on');
-        set(handles.firmwareSelection,'enable','off');
         set(handles.portMenu,'enable','off');
         set(handles.refreshButton,'enable','off');
-        
-        
-        if handles.firmwareSelection.Value == 1 % TinyG
-            fprintf(device,'{"ej":1}'); % enter json mode
-            fprintf(device,'{"js":1}'); % strict json syntax
-            fprintf(device,'{"sv":1}'); % enable filtered status reports
-        else % G2Core
-            % send tool table offsets to the Craniobot (they aren't stored in 
-            % its eeprom)
-            set(handles.toolSelection,'enable','on');
-            for i = 1:32
-                offset = num2str(handles.toolTable.ToolOffset(i));
-                tool   = num2str(i);
-                str    = strcat('{tt',tool,'z:',offset,'}');
-                fprintf(handles.device,str);
-            end
-        end
-        %}
+
+        fprintf(device,'{"ej":1}'); % enter json mode
+        fprintf(device,'{"js":1}'); % strict json syntax (for TinyG)
+        fprintf(device,'{"jv":5}'); % verbose json feedback
+        fprintf(device,'{"sv":1}'); % enable filtered status reports
     end
     
 % Else, if button is switched "off"
@@ -246,8 +202,6 @@ else
     set(handles.probeCircleMenu,'enable','off');
     set(handles.probeWindowMenu,'enable','off');
     set(handles.millMenu,'enable','off');
-    set(handles.toolSelection,'enable','off');
-    set(handles.firmwareSelection,'enable','on');
     set(handles.portMenu,'enable','on');
     set(handles.refreshButton,'enable','on');
 end
@@ -654,7 +608,6 @@ function probeCircleMenu_Callback(hObject, eventdata, handles)
 % hObject    handle to probeCircleMenu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tool = get(handles.toolSelection,'Value');
 
 % create new window
 fig = figure('Name','Probing Parameters',...
@@ -755,7 +708,7 @@ function millMenu_Callback(hObject, eventdata, handles)
 % create new window
 fig = figure('Name','Milling Parameters',...
     'Units','pixels',...
-    'Position',[200,200,400,200],...
+    'Position',[200,200,400,220],...
     'NumberTitle','off',...
     'Tag','millWindow',...
     'MenuBar','none',...
@@ -766,32 +719,50 @@ figHandles = guidata(fig);
 figHandles.depthLabel = uicontrol(fig,'Style','text',...
     'Units','pixels',...
     'String','Depth per Pass (mm)',...
-    'Position',[5,150,150,20]);
+    'Position',[5,180,150,20]);
 figHandles.depthTextBox = uicontrol(fig,'Style','edit',...
     'Units','pixels',...
     'Tag','depthTextBox',...
-    'Position',[200,150,50,20]);
+    'Position',[200,180,50,20]);
 
 figHandles.thicknessLabel = uicontrol(fig,'Style','text',...
     'Units','pixels',...
     'String','Skull Thickness (mm)',...
-    'Position',[5,120,150,20]);
+    'Position',[5,150,150,20]);
 figHandles.thicknessTextBox = uicontrol(fig,'Style','edit',...
     'Units','pixels',...
     'Tag','thicknessTextBox',...
-    'Position',[200,120,50,20]);
+    'Position',[200,150,50,20]);
 
 figHandles.feedrateLabel = uicontrol(fig,'Style','text',...
     'Units','pixels',...
     'String','Feedrate (mm/min)',...
-    'Position',[5,90,150,20]);
+    'Position',[5,120,150,20]);
 figHandles.feedrateTextBox = uicontrol(fig,'Style','edit',...
     'Units','pixels',...
-    'Position',[200,90,100,20]);
-figHandles.reminderLabel = uicontrol(fig,'Style','text',...
+    'Position',[200,120,100,20]);
+
+str = {};
+for i = 1:32
+    desc = handles.toolTable.Description(i);
+    str(i) = strcat(num2str(i),{' - '},desc);
+end
+figHandles.toolALabel = uicontrol(fig,'Style','text',...
     'Units','pixels',...
-    'String','REMINDER: Select deisred tool before generating program.',...
-    'Position',[5,60,300,20]);
+    'String','Select Probe Used:',...
+    'Position',[5,90,150,20]);
+figHandles.toolASelect= uicontrol(fig,'Style','popupmenu',...
+    'Units','pixels',...
+    'String',str,...
+    'Position',[200,90,200,20]);
+figHandles.toolBLabel = uicontrol(fig,'Style','text',...
+    'Units','pixels',...
+    'String','Select Milling Bit:',...
+    'Position',[5,60,150,20]);
+figHandles.toolBSelect= uicontrol(fig,'Style','popupmenu',...
+    'Units','pixels',...
+    'String',str,...
+    'Position',[200,60,200,20]);
 
 figHandles.millSkullButton = uicontrol(fig,'Style','pushbutton',...
     'Units','pixels',...
@@ -867,14 +838,8 @@ if isempty(xVal) || isempty(yVal) || isempty(zVal) || isempty(diaVal)
 else
     GUI     = findobj(0,'Tag','GUI'); % find GUI since it isn't passed into this function
     handles = guidata(GUI); % get GUI handles (not probe menu handles)
-    tool    = handles.tool;
-    Zmax    = -handles.toolTable.ToolOffset(tool);
     close;
-    if handles.firmwareSelection == 1
-        probeCircleTinyG(diaVal,xVal,yVal,zVal,speed,tool,Zmax);
-    else
-        probeCircle(diaVal,xVal,yVal,zVal,speed,tool,Zmax);
-    end
+    probeCircle(diaVal,xVal,yVal,zVal,speed);
 end
 end
 function probeWindowButton_Callback(hObject, eventdata, handles)
@@ -906,49 +871,24 @@ if isempty(handles.skullPoints)
     uiwait( errordlg('Skull has not been probed yet.',...
                      'Input Error', 'modal') );
 else
-    xVals      = handles.skullPoints(:,1);
-    yVals      = handles.skullPoints(:,2);
-    zVals      = handles.skullPoints(:,3);
-    depth      = str2double(get(figHandles.depthTextBox,'String'));
-    thickness  = str2double(get(figHandles.thicknessTextBox,'String'));
-    feedrate   = str2double(get(figHandles.feedrateTextBox,'String'));
-    tool       = handles.tool;
-    toolOffset = handles.toolTable.ToolOffset(tool);
+    xVals       = handles.skullPoints(:,1);
+    yVals       = handles.skullPoints(:,2);
+    zVals       = handles.skullPoints(:,3);
+    probeOffset = handles.toolTable{figHandles.toolASelect.Value,3};
+    bitOffset   = handles.toolTable{figHandles.toolBSelect.Value,3};
+    zVals       = zVals - probeOffset + bitOffset;
+    depth       = str2double(get(figHandles.depthTextBox,'String'));
+    thickness   = str2double(get(figHandles.thicknessTextBox,'String'));
+    feedrate    = str2double(get(figHandles.feedrateTextBox,'String'));
     
     if isempty(depth) || isempty(thickness) || isempty(feedrate)
         uiwait( errordlg('Missing input parameter...',...
                          'Input Error', 'modal') );
     else
         close;
-        millProbedPoints(xVals,yVals,zVals,thickness,depth,feedrate,tool,toolOffset);
+        millProbedPoints(xVals,yVals,zVals,thickness,depth,feedrate);
     end
 end
-end
-function toolSelection_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to toolSelection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-end
-function toolSelection_Callback(hObject, eventdata, handles)
-% Objective: Apply tool offset to the Craniobot
-% hObject    handle to toolSelection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-handles.tool = (get(hObject,'Value'));
-str = string(strcat('M6 T',num2str(handles.tool))); % change tool command
-fprintf(handles.device,str);
-str = string(strcat('G43 H',num2str(handles.tool))); % apply tool offset
-fprintf(handles.device,str); % move to new position
-guidata(gcf,handles);
-
 end
 %% File Manager
 function chooseFileButton_Callback(hObject, eventdata, handles)
@@ -1380,8 +1320,7 @@ for i = 1:numel(PRfields)
         case "z"
             x = handles.posx;
             y = handles.posy;
-            % add tool offset to get position in work coordinates
-            z = PR.(PRfields{i}) - handles.toolTable.ToolOffset(handles.tool);
+            z = PR.(PRfields{i}); % - handles.toolTable.ToolOffset(handles.tool);
             handles.skullPoints(end+1,:) = [x, y, z];
     end
 end
