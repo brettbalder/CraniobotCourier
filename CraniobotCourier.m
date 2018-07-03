@@ -31,6 +31,9 @@ function CraniobotCourier_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for CraniobotCourier
 handles.output = hObject;
 
+% initialize port variable
+handles.port = "";
+
 % initialize path of G-code file that is to be sent to Craniobot
 handles.filePath = {};
 handles.lastGc = "";
@@ -137,75 +140,86 @@ function connectButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial object (the Craniobot)
-device = serial(handles.port,'baudRate',115200,...
-                        'Databits', 8,...
-                        'StopBits',1,...
-                        'Parity','none',...
-                        'FlowControl','none',...
-                        'ReadAsyncMode','continuous',...
-                        'Terminator','LF',...
-                        'BytesAvailableFcnMode','terminator',...
-                        'BytesAvailableFcn',@BytesAvailable);
-                    
-% if button is switched "on"
-if get(hObject,'Value')
-    
-    fopen(device);
-    % If the serial port fails to open
-    if get(device,'Status') ~= 'open'
-        instrreset;
-        uiwait( errordlg('Missing input parameter...',...
-                    'Input Error', 'modal') );
-        set(hObject,'Value',0);
+try
+    device = serial(handles.port,'baudRate',115200,...
+                            'Databits', 8,...
+                            'StopBits',1,...
+                            'Parity','none',...
+                            'FlowControl','none',...
+                            'ReadAsyncMode','continuous',...
+                            'Terminator','LF',...
+                            'BytesAvailableFcnMode','terminator',...
+                            'BytesAvailableFcn',@BytesAvailable);
+
+    % if button is switched "on"
+    if get(hObject,'Value')
+
+        fopen(device);
+        % If the serial port fails to open
+        if get(device,'Status') ~= 'open'
+            instrreset;
+            uiwait( errordlg('Missing input parameter...',...
+                        'Input Error', 'modal') );
+            set(hObject,'Value',0);
+        else
+            % Change button text and open the serial port
+            set(hObject,'String','Close');
+            set(handles.machineStateTextBox,'String',["Machine State:","READY"]);
+            % store the device handle
+            handles.device = device;
+            guidata(hObject,handles);
+
+            % enable/disable GUI Elements
+            set(findall(handles.MotionButtonsGrp,...
+                '-property', 'enable'), 'enable', 'on');
+            set(findall(handles.commonCommandsGrp,...
+                '-property', 'enable'), 'enable', 'on');
+            set(handles.chooseFileButton,'enable','on');
+            set(handles.commandLine,'enable','on');
+            set(handles.probeCircleMenu,'enable','on');
+            set(handles.probeWindowMenu,'enable','on');
+            set(handles.millMenu,'enable','on');
+            set(handles.portMenu,'enable','off');
+            set(handles.refreshButton,'enable','off');
+
+            fprintf(device,'{"ej":1}'); % enter json mode
+            fprintf(device,'{"js":1}'); % strict json syntax (for TinyG)
+            fprintf(device,'{"jv":5}'); % verbose json feedback
+            fprintf(device,'{"sv":1}'); % enable filtered status reports
+        end
+
+    % Else, if button is switched "off"
     else
-        % Change button text and open the serial port
-        set(hObject,'String','Close');
-        set(handles.machineStateTextBox,'String',["Machine State:","READY"]);
-        % store the device handle
-        handles.device = device;
-        guidata(hObject,handles);
+        % Delete serial instrument from memory; change button string
+        instrreset; 
+        set(gcbo,'String','Open');
+        set(handles.machineStateTextBox,'String',["Machine State:","DISCONNECTED"]);
 
         % enable/disable GUI Elements
         set(findall(handles.MotionButtonsGrp,...
-            '-property', 'enable'), 'enable', 'on');
-        set(findall(handles.commonCommandsGrp,...
-            '-property', 'enable'), 'enable', 'on');
-        set(handles.chooseFileButton,'enable','on');
-        set(handles.commandLine,'enable','on');
-        set(handles.probeCircleMenu,'enable','on');
-        set(handles.probeWindowMenu,'enable','on');
-        set(handles.millMenu,'enable','on');
-        set(handles.portMenu,'enable','off');
-        set(handles.refreshButton,'enable','off');
-
-        fprintf(device,'{"ej":1}'); % enter json mode
-        fprintf(device,'{"js":1}'); % strict json syntax (for TinyG)
-        fprintf(device,'{"jv":5}'); % verbose json feedback
-        fprintf(device,'{"sv":1}'); % enable filtered status reports
-    end
-    
-% Else, if button is switched "off"
-else
-    % Delete serial instrument from memory; change button string
-    instrreset; 
-    set(gcbo,'String','Open');
-    set(handles.machineStateTextBox,'String',["Machine State:","DISCONNECTED"]);
-    
-    % enable/disable GUI Elements
-    set(findall(handles.MotionButtonsGrp,...
-        '-property', 'enable'), 'enable', 'off');
-    set(findall(handles.commonCommandsGrp,...
-        '-property', 'enable'), 'enable', 'off');
-    set(findall(handles.fileManagerGrp,...
             '-property', 'enable'), 'enable', 'off');
-    set(handles.commandLine,'enable','off');
-    set(handles.probeCircleMenu,'enable','off');
-    set(handles.probeWindowMenu,'enable','off');
-    set(handles.millMenu,'enable','off');
-    set(handles.portMenu,'enable','on');
-    set(handles.refreshButton,'enable','on');
+        set(findall(handles.commonCommandsGrp,...
+            '-property', 'enable'), 'enable', 'off');
+        set(findall(handles.fileManagerGrp,...
+                '-property', 'enable'), 'enable', 'off');
+        set(handles.commandLine,'enable','off');
+        set(handles.probeCircleMenu,'enable','off');
+        set(handles.probeWindowMenu,'enable','off');
+        set(handles.millMenu,'enable','off');
+        set(handles.portMenu,'enable','on');
+        set(handles.refreshButton,'enable','on');
+    end
+    %save changes in data structure
+catch ME
+    data = cellstr(get(handles.consoleWindow,'String'));
+    data{end+1} = ME.identifier;
+    data{end+1} = "Serial object appears to be busy, try again";
+    set(handles.consoleWindow,'String',data,...
+                 'Value',length(data));
+    set(handles.connectButton,'Value',0);
+    instrreset;
 end
-%save changes in data structure
+    
 guidata(hObject,handles);
 end
 function refreshButton_Callback(hObject, eventdata, handles)
