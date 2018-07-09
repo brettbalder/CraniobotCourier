@@ -21,7 +21,7 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
     centerPos = Stereo2Robot*[X;Y;Z;1];
 
     % Choose resolution of points.
-    numberPoints = 6;
+    numberPoints = 36;
     resolutionCirc = 2*pi/numberPoints;
     theta = 0:resolutionCirc:2*pi-resolutionCirc;
 
@@ -42,8 +42,7 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
     fileID = fopen('probePath.txt','w');
     
     % make header commands
-    fprintf(fileID,'%s\n', strcat("N1 G90; (set to absolute coordinates motion",...
-        "and work coordinate system)"));
+    fprintf(fileID,'%s\n', strcat("N1 G90; (set to absolute coordinates motion)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(Xproj(1)),...
             " Y",num2str(Yproj(1))));
@@ -55,7 +54,7 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
         ln = ln+1;
         probePos = [Xproj(ii),Yproj(ii),Zoffset];
         fprintf(fileID,'%s\n', strcat("N",num2str(ln),...
-            " G0 X",num2str(probePos(1)),...
+            " G90 G0 X",num2str(probePos(1)),...
             " Y",num2str(probePos(2)),...
             " Z",num2str(probePos(3))));
         ln = ln+1;
@@ -64,19 +63,13 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
             " G38.2 Z",num2str(Zmin),...
             " F",num2str(probeSpeed)));
         ln = ln+1;
-    % Return to current X, Y, Zoffset
+    % Retract by offset amount
         fprintf(fileID,'%s\n',strcat("N", num2str(ln),...
-            " G0 X",num2str(probePos(1)),...
-            " Y",num2str(probePos(2)),...
-            " Z",num2str(probePos(3))));
+            " G91 G0 Z",num2str(offsetVal)));
     end
     
     % make footer commands
     fprintf(fileID,'%s\n',strcat("N", num2str(ln+1),...
-        " G0 Z0; (Retract)"));
-    fprintf(fileID,'%s\n',strcat("N", num2str(ln+2),...
-        " G0 X0 Y0 Z0 A0 B0 C0; (Go to home)"));
-    fprintf(fileID,'%s\n',strcat("N", num2str(ln+3),...
         " M2; (Program Complete)"));
     fclose(fileID);
     

@@ -28,6 +28,7 @@ function pointGen(max_step)
     %                    [-7,-8,-8,-7]];
     
     %% Interpolate coordinates based on max_step
+    max_step = 1;
     num_steps = length(logo_coordinates);
     interp = [];
     for x = 1:num_steps-1
@@ -69,7 +70,7 @@ function pointGen(max_step)
     
     % make header commands
     fprintf(fileID,'%s\n',strcat("N1 G90;",...
-        " (set to absolute coordinates motion and work coordinate system)"));
+        " (set to absolute coordinates motion)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(interp(1,1)),...
             " Y",num2str(interp(2,1)),...
@@ -77,12 +78,13 @@ function pointGen(max_step)
     
     % Loop through theta by 1 step
     ln = 3; % line number
+    zBackOff = 1; % how far to retract between probing points
     for i = 1:length(interp)
     % Move to current X, Y, probing point
         ln = ln+1;
-        probePos = round([interp(1,i),interp(2,i),0],4);
+        probePos = round([interp(1,i),interp(2,i),0],zBackOff);
         fprintf(fileID,'%s\n', strcat("N",num2str(ln),...
-            " G0 X",num2str(probePos(1)),...
+            " G90 G0 X",num2str(probePos(1)),...
             " Y",num2str(probePos(2)),...
             " Z",num2str(probePos(3)),...
             ";"));
@@ -92,12 +94,9 @@ function pointGen(max_step)
             " G38.2 Z-10",...
             " F5;"));
         ln = ln+1;
-    % Return to current X, Y, Zoffset
+    % Retract by offset amount
         fprintf(fileID,'%s\n',strcat("N", num2str(ln),...
-            " G0 X",num2str(probePos(1)),...
-            " Y",num2str(probePos(2)),...
-            " Z",num2str(probePos(3)),...
-            ";"));
+            " G91 G0 Z",num2str(zBackOff),";"));
     end
     
     % make footer commands
