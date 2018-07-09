@@ -68,21 +68,22 @@ function pointGen(max_step)
     % create .txt file to store path
     fileID = fopen('probePath.txt','w');
     
+    zBackOff = 0.5; % how far to retract between probing points
+    
     % make header commands
     fprintf(fileID,'%s\n',strcat("N1 G90;",...
         " (set to absolute coordinates motion)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(interp(1,1)),...
             " Y",num2str(interp(2,1)),...
-            ";"));
+            " Z2;"));
     
     % Loop through theta by 1 step
     ln = 3; % line number
-    zBackOff = 1; % how far to retract between probing points
     for i = 1:length(interp)
-    % Move to current X, Y, probing point
+    % Move to next X,Y probing point
         ln = ln+1;
-        probePos = round([interp(1,i),interp(2,i),0],zBackOff);
+        probePos = [interp(1,i),interp(2,i),0];
         fprintf(fileID,'%s\n', strcat("N",num2str(ln),...
             " G90 G0 X",num2str(probePos(1)),...
             " Y",num2str(probePos(2)),...

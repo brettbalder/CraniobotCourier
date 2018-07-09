@@ -28,7 +28,7 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
     % Create circle projection
     Xproj = centerPos(1) + circDia*cos(theta)/2;
     Yproj = centerPos(2) + circDia*sin(theta)/2;
-    offsetVal = 2;
+    offsetVal = 0.5;
     Zmin = -90; %used to define where the probe should home towards
     
     % Find a safe spot above the skull to home to
@@ -45,17 +45,18 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
     fprintf(fileID,'%s\n', strcat("N1 G90; (set to absolute coordinates motion)"));
     fprintf(fileID,'%s\n', "N2 G21; (set to millimeters)");
     fprintf(fileID,'%s\n', strcat("N3 G0 X",num2str(Xproj(1)),...
-            " Y",num2str(Yproj(1))));
+            " Y",num2str(Yproj(1)),...
+            " Z",num2str(offsetVal)));
     
     % Loop through theta by 1 step
     ln = 3; % line number
     for ii = 1:numberPoints
-    % Move to current X, Y, probing point
+    % Move to next X,Y probing point
         ln = ln+1;
         probePos = [Xproj(ii),Yproj(ii),Zoffset];
         fprintf(fileID,'%s\n', strcat("N",num2str(ln),...
             " G90 G0 X",num2str(probePos(1)),...
-            " Y",num2str(probePos(2)),...
+            " Y",num2str(probePos(2))));
         ln = ln+1;
     % Probe Command
         fprintf(fileID,'%s\n',strcat("N",num2str(ln),...

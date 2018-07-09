@@ -3,7 +3,7 @@ function varargout = CraniobotCourier(varargin)
 % IDK what this function does, but don't delete it
 
 % CRANIOBOTCOURIER MATLAB code for CraniobotCourier.fig
-% Last Modified by GUIDE v2.5 02-Jul-2018 13:54:09
+% Last Modified by GUIDE v2.5 09-Jul-2018 11:57:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,7 @@ handles.posz = 0;
 handles.posa = 0;
 handles.posb = 0;
 handles.posc = 0;
+handles.coor = 1; % 1=G54, 2=G55, etc.
 
 %initialize GCode parameters
 handles.units = 1; % (0|1 - inch|mm). Default: 1. 
@@ -71,13 +72,14 @@ if handles.units == 1
 else
     units = 'Work Position (inch):';
 end
+coor = strcat('Coord Sys: G',num2str(handles.coor + 53));
 xStr = strcat('X:',32,num2str(handles.posx));
 yStr = strcat('Y:',32,num2str(handles.posy));
 zStr = strcat('Z:',32,num2str(handles.posz));
 aStr = strcat('A:',32,num2str(handles.posa));
 bStr = strcat('B:',32,num2str(handles.posb));
 cStr = strcat('C:',32,num2str(handles.posc));
-positionString = {units,xStr,yStr,zStr,aStr,bStr,cStr};
+positionString = {units,coor,xStr,yStr,zStr,aStr,bStr,cStr};
 stateString = {'Machine State:',handles.stat};
 set(handles.workPositionTextBox,'String',positionString);
 set(handles.machineStateTextBox,'String',stateString);
@@ -601,15 +603,79 @@ function homeAllAxes_Callback(hObject, eventdata, handles)
 
 fprintf(handles.device,'G28.2 X0 Y0 Z0; (Home All Axes)'); %home all axes on machine
 end
-%% Program Generation/Menus
+function G55Button_Callback(hObject, eventdata, handles)
+% hObject    handle to G55Button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%
+% Tool A uses coord sys P2 (G55). We reserve P1 (G54) as a persistent machine
+% coordinate system
+offset = handles.G55Text.String;
+str = strcat("G10 L2 P2 X0 Y0 Z",offset,"A0 B0 C0");
+fprintf(handles.device,str);
+fprintf(handles.device,"G55");
+end
+function G56Button_Callback(hObject, eventdata, handles)
+% hObject    handle to G56Button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%
+% Tool B uses coord sys P3 (G56). We reserve P1 (G54) as a persistent machine
+% coordinate system
+offset = handles.G56Text.String;
+str = strcat("G10 L2 P3 X0 Y0 Z",offset,"A0 B0 C0");
+fprintf(handles.device,str);
+fprintf(handles.device,"G56");
+end
+function G55Text_Callback(hObject, eventdata, handles)
+% hObject    handle to G55Text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of G55Text as text
+%        str2double(get(hObject,'String')) returns contents of G55Text as a double
+end
+function G55Text_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to G55Text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+function G56Text_Callback(hObject, eventdata, handles)
+% hObject    handle to G56Text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of G56Text as text
+%        str2double(get(hObject,'String')) returns contents of G56Text as a double
+end
+function G56Text_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to G56Text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+%% Menus and Program Generation
 function ProbingMenu_Callback(hObject, eventdata, handles)
 % hObject    handle to ProbingMenu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if isempty(handles.skullPoints)
     set(handles.clearSet1,'enable','off');
+    set(handles.editSet1,'enable','off');
 else
     set(handles.clearSet1,'enable','on');
+    set(handles.editSet1,'enable','on');
 end
 end
 function MillingMenu_Callback(hObject, eventdata, handles)
@@ -711,6 +777,46 @@ function clearSet1_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 handles.skullPoints = [];
 guidata(hObject,handles);
+end
+function editSet1_Callback(hObject, eventdata, handles)
+% hObject    handle to editSet1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% create new window
+fig = figure('Name','Milling Parameters',...
+    'Units','pixels',...
+    'Position',[200,200,200,600],...
+    'NumberTitle','off',...
+    'Tag','millWindow',...
+    'MenuBar','none',...
+    'ToolBar','none');
+figHandles = guidata(fig);
+
+tData = array2table(handles.skullPoints,'VariableNames',{'X','Y','Z'});
+table = uitable('Parent', fig,...
+    'Position', [0 0 200 575],...
+    'ColumnName',{'X','Y','Z'},...
+    'ColumnWidth',{50,50,50},...
+    'ColumnFormat',{'numeric','numeric','numeric'},...
+    'ColumnEditable',[true,true,true],...
+    'CellEditCallback',@toolTableEdit,...
+    'RowName',[],...
+    'Data',handles.skullPoints);
+
+    function toolTableEdit(~,eventdata,~)
+        % Save changes 
+        row   = eventdata.Indices(1);
+        col   = eventdata.Indices(2);
+        input = eventdata.EditData;
+        if ~isnumeric(input)
+            input = str2double(input);
+        end
+        handles.skullPoints(row,col) = input;
+        % save any changes
+        guidata(hObject,handles);
+    end
+
 end
 function millMenu_Callback(hObject, eventdata, handles)
 % Objective: create window to input milling parameters and generate gcode script 
@@ -1238,6 +1344,8 @@ for i = 1:numel(SRfields)
             handles.line = SR.(SRfields{i});
             set(handles.progressBar,'String',{'Progress:',...
             strcat(num2str(100*handles.line/handles.MaxLine),'%')});
+        case "coor"
+            handles.coor = SR.(SRfields{i});
         case "posx"
             handles.posx = SR.(SRfields{i});
         case "posy"
@@ -1301,13 +1409,14 @@ end
 
 guidata(findobj(0,'Tag','GUI'), handles);
 
+coor = strcat('Coord Sys: G',num2str(handles.coor + 53));
 xStr = strcat('X:',32,num2str(handles.posx));
 yStr = strcat('Y:',32,num2str(handles.posy));
 zStr = strcat('Z:',32,num2str(handles.posz));
 aStr = strcat('A:',32,num2str(handles.posa));
 bStr = strcat('B:',32,num2str(handles.posb));
 cStr = strcat('C:',32,num2str(handles.posc));
-positionString = {units,xStr,yStr,zStr,aStr,bStr,cStr};
+positionString = {units,coor,xStr,yStr,zStr,aStr,bStr,cStr};
 stateString = {'Machine State:',handles.stat};
 set(handles.workPositionTextBox,'String',positionString);
 set(handles.machineStateTextBox,'String',stateString);
