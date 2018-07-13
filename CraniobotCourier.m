@@ -31,29 +31,29 @@ function CraniobotCourier_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for CraniobotCourier
 handles.output = hObject;
 
-% initialize port variable
+%  port variable
 handles.port = "";
 
-% initialize path of G-code file that is to be sent to Craniobot
+%  path of G-code file that is to be sent to Craniobot
 handles.filePath = {};
 handles.lastGc = "";
 
-% initialize command line cache (used for selecting previously issued commands)
+%  command line cache (used for selecting previously issued commands)
 handles.cache = {};
 
-% initialize 2D array to store all probed points of skull in form 
+%  2D array to store all probed points of skull in form 
 % [x1,y1,z1; 
 %  x2 y2 z2;...]
 handles.skullPoints = [];
 
-% initialize "linesToSend" value for Linemode protocol (see g2core wiki)
+%  "linesToSend" value for Linemode protocol (see g2core wiki)
 sb = findobj(gcf,'Tag','sendFileButton');
 set(sb,'userdata',4);
 
-% initialize machine state variable
+%  machine state variable
 handles.stat = "DISCONNECTED";
 
-% initialize CNC position variables
+%  CNC position variables
 handles.posx = 0;
 handles.posy = 0;
 handles.posz = 0;
@@ -62,10 +62,10 @@ handles.posb = 0;
 handles.posc = 0;
 handles.coor = 1; % 1=G54, 2=G55, etc.
 
-%initialize GCode parameters
+% GCode parameters
 handles.units = 1; % (0|1 - inch|mm). Default: 1. 
 
-% initialize state and position textboxs
+%  state and position textboxs
 % Note: 32 is the ASCII character for a space
 if handles.units == 1
     units = 'Work Position (mm):';
@@ -84,13 +84,13 @@ stateString = {'Machine State:',handles.stat};
 set(handles.workPositionTextBox,'String',positionString);
 set(handles.machineStateTextBox,'String',stateString);
 
-% initialize program progress bar
+%  program progress bar
 handles.line    = 1;
 handles.MaxLine = 1;
 set(handles.progressBar,'String',{'Progress:',...
     strcat(num2str(100*handles.line/handles.MaxLine),'%')});
 
-% Read in Tool Table and initialize relevant variables
+% Read in Tool Table
 filename = fullfile(pwd,'toolTable.csv');
 handles.toolTable = readtable(filename);
 
@@ -1163,7 +1163,7 @@ elseif strcmp(eventdata.Key,'downarrow')
     guidata(hObject, handles);
 end
 end
-%% Auxillary
+%% Auxiliary
 function BytesAvailable(device,~)
 % Objective: Computer will automatically read input from serial device
 % asynchronously. This function assumes all incoming data is formatted as json
