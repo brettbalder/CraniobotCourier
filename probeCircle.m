@@ -21,14 +21,14 @@ function [commandArray] = probeCircle(circDia,X,Y,Z,probeSpeed)
     centerPos = Stereo2Robot*[X;Y;Z;1];
 
     % Choose resolution of points.
-    numberPoints = 36;
+    numberPoints = 10;
     resolutionCirc = 2*pi/numberPoints;
     theta = 0:resolutionCirc:2*pi-resolutionCirc;
 
     % Create circle projection
     Xproj = centerPos(1) + circDia*cos(theta)/2;
     Yproj = centerPos(2) + circDia*sin(theta)/2;
-    offsetVal = 0.5;
+    offsetVal = 3;
     Zmin = -90; %used to define where the probe should home towards
     
     % Find a safe spot above the skull to home to

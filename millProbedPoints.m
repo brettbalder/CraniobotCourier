@@ -8,17 +8,17 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate)
     % feedrate      Feedrate of mill (units/min)
     % thickenss     thickness of material
     % depth         depth per pass of mill
-
+  
     nProbedPoints = numel(X);
     nPasses = ceil(thickness/depth);
     
-    figure('Name','Surface Map');
-    scatter3(X,Y,Z);
-    axis equal
-    xlabel('X-axis Location (mm)');
-    ylabel('Y-axis Location (mm)');
-    zlabel('Z-axis Location (mm)');
-    title(sprintf('%d Total Points',nProbedPoints));
+%     figure('Name','Surface Map');
+%     scatter3(X,Y,Z);
+%     axis equal
+%     xlabel('X-axis Location (mm)');
+%     ylabel('Y-axis Location (mm)');
+%     zlabel('Z-axis Location (mm)');
+%     title(sprintf('%d Total Points',nProbedPoints));
     
     % home is the position directly above the first probed point on the skull
     home = [X(1),Y(1),Z(1)+2];  
@@ -38,6 +38,7 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate)
     for j = 1:nPasses
         % Loop through each probed point
         for i = 1:nProbedPoints
+
             ln = ln+1;
             % Move to next X,Y,Z position
             fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
@@ -51,7 +52,7 @@ function millProbedPoints(X,Y,Z,thickness,depth,feedrate)
         ln = ln+1;
         fprintf(fileID,'%s\n', strcat("N", num2str(ln)," G91 G0 Z5"));
         ln = ln+1;
-        %There was a mistake here, G90 and G1 were not there (it was G0)
+        %There was a mistake here, G90 and G1 was not there (it was G0)
         fprintf(fileID,'%s\n', strcat("N", num2str(ln),...
           " G90 G1 X",num2str(X(1)),...
           " Y",num2str(Y(1)),...
