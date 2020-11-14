@@ -969,12 +969,11 @@ else
     GUI     = findobj(0,'Tag','GUI'); % find GUI since it isn't passed into this function
     handles = guidata(GUI); % get GUI handles (not probe menu handles)
     close;
-    handles.skullPoints=[];
-    guidata(GUI,handles)
     probeCircle(diaVal,xVal,yVal,zVal,speed);
 end
 
-
+handles.skullPoints=[];
+guidata(hObject,handles)
 end
 function probeWindowButton_Callback(hObject, eventdata, handles)
 % hObject    handle to probeSkullButton (see GCBO)
@@ -1017,10 +1016,10 @@ else
                          'Input Error', 'modal') );
     else
         close;
-        X=[xVals; xVals(1)];
-        Y=[yVals; yVals(1)];
-        Z=[zVals; zVals(1)];
-      
+ 
+        X=[xVals(2:end); xVals(2)];
+        Y=[yVals(2:end); yVals(2)];
+        Z=[zVals(2:end); zVals(2)];
         millProbedPoints(X,Y,Z,thickness,depth,feedrate);
     end
 end
