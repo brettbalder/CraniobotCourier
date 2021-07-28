@@ -157,7 +157,6 @@ try
         
         configureTerminator(device,"LF");
         configureCallback(device,"terminator",@BytesAvailable);
-        %                         'ReadAsyncMode','continuous',...
         
         % update persistent variable value for connection status
         handles.connect = 1;
@@ -188,7 +187,7 @@ try
         writeline(device,'{"jv":5}'); % verbose json feedback
         writeline(device,'{"sv":1}'); % enable filtered status reports
         
-    % close serial connection
+        % close serial connection
     else
         % Delete serial instrument from memory
         handles.device = [];
@@ -285,8 +284,6 @@ handles.cache{end+1} = cellstr(text);
 set(gcbo,'String','');
 
 % send command
-% fprintf(device,upper(text));
-
 writeline(device,upper(text));
 guidata(hObject, handles);
 end
@@ -328,11 +325,9 @@ function linearStepGrp_SelectionChangedFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if get(handles.MillimeterButton,'Value')
-    % fprintf(handles.device,'G21');
     writeline(handles.device,'G21');
     handles.units = 1;
 else
-    % fprintf(handles.device,'G20');
     writeline(handles.device,'G20');
     handles.units = 0;
 end
@@ -349,7 +344,6 @@ function XPlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 X',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function XMinus_Callback(hObject, eventdata, handles)
@@ -363,7 +357,6 @@ function XMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 X-',stepSize));
-% fprintf(handles.device,command);
 writeline(handles.device,command); % move to new position
 end
 function YPlus_Callback(hObject, eventdata, handles)
@@ -376,7 +369,6 @@ function YPlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 Y',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function YMinus_Callback(hObject, eventdata, handles)
@@ -390,7 +382,6 @@ function YMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 Y-',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function ZPlus_Callback(hObject, eventdata, handles)
@@ -404,7 +395,6 @@ function ZPlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 Z',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function ZMinus_Callback(hObject, eventdata, handles)
@@ -418,7 +408,6 @@ function ZMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 Z-',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function APlus_Callback(hObject, eventdata, handles)
@@ -431,7 +420,6 @@ function APlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 A',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function AMinus_Callback(hObject, eventdata, handles)
@@ -445,7 +433,6 @@ function AMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 A-',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function BPlus_Callback(hObject, eventdata, handles)
@@ -459,7 +446,6 @@ function BPlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 B',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function BMinus_Callback(hObject, eventdata, handles)
@@ -473,7 +459,6 @@ function BMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 B-',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function CPlus_Callback(hObject, eventdata, handles)
@@ -487,7 +472,6 @@ function CPlus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 C',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function CMinus_Callback(hObject, eventdata, handles)
@@ -501,7 +485,6 @@ function CMinus_Callback(hObject, eventdata, handles)
 % send movement command
 stepSize = get(handles.linearStepSize,'String');
 command = string(strcat('G91 G0 C-',stepSize));
-% fprintf(handles.device,command); % move to new position
 writeline(handles.device,command); % move to new position
 end
 function MillimeterButton_Callback(hObject, eventdata, handles)
@@ -521,7 +504,6 @@ function setOriginButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial device (Craniobot)
 
-% fprintf(handles.device,'G28.3 X0 Y0 Z0 A0 B0 C0; (Set Origin)');
 writeline(handles.device,'G28.3 X0 Y0 Z0 A0 B0 C0; (Set Origin)');
 
 end
@@ -532,7 +514,6 @@ function moveToOriginButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % device     handle to serial device (Craniobot)
-% fprintf(handles.device,' G90 G0 X0 Y0 Z0 A0 B0 C0; (Move to origin)');
 writeline(handles.device,' G90 G0 X0 Y0 Z0 A0 B0 C0; (Move to origin)');
 end
 function clearButton_Callback(hObject, eventdata, handles)
@@ -542,7 +523,6 @@ function clearButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% fprintf(handles.device,'{"clear":n}');
 writeline(handles.device,'{"clear":n}');
 data = cellstr(get(handles.consoleWindow,'String'));
 data{end+1} = '{"clear":n} (Clear Alarms)'; %concatenate newData with the old data
@@ -556,7 +536,6 @@ function resetButton_Callback(hObject, eventdata, handles)
 
 % Send reset command to controller
 % Note: 24 is the ASCII character for ctrl-x
-% fprintf(handles.device,24);
 writeline(handles.device,24);
 data = cellstr(get(handles.consoleWindow,'String'));
 data{end+1} = "Resetting Machine..."; %concatenate newData with the old data
@@ -572,7 +551,6 @@ function resetXButton_Callback(hObject, eventdata, handles)
 % device     handle to serial device (Craniobot)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 X0; (Reset X Axis)');
 writeline(handles.device,'G28.3 X0; (Reset X Axis)');
 end
 function resetYButton_Callback(hObject, eventdata, handles)
@@ -581,7 +559,6 @@ function resetYButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 Y0; (Reset Y Axis)');
 writeline(handles.device,'G28.3 Y0; (Reset Y Axis)');
 end
 function resetZButton_Callback(hObject, eventdata, handles)
@@ -590,7 +567,6 @@ function resetZButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 Z0; (Reset Z Axis)');
 writeline(handles.device,'G28.3 Z0; (Reset Z Axis)');
 end
 function resetAButton_Callback(hObject, eventdata, handles)
@@ -599,7 +575,6 @@ function resetAButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 A0; (Reset A Axis)');
 writeline(handles.device,'G28.3 A0; (Reset A Axis)');
 end
 function resetBButton_Callback(hObject, eventdata, handles)
@@ -608,7 +583,6 @@ function resetBButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 B0; (Reset B Axis)');
 writeline(handles.device,'G28.3 B0; (Reset B Axis)');
 end
 function resetCButton_Callback(hObject, eventdata, handles)
@@ -617,7 +591,6 @@ function resetCButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Set controller position
-% fprintf(handles.device,'G28.3 C0; (Reset C Axis)');
 writeline(handles.device,'G28.3 C0; (Reset C Axis)');
 end
 function homeAllAxes_Callback(hObject, eventdata, handles)
@@ -627,7 +600,6 @@ function homeAllAxes_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% fprintf(handles.device,'G28.2 X0 Y0 Z0; (Home All Axes)'); %home all axes on machine
 writeline(handles.device,'G28.2 X0 Y0 Z0; (Home All Axes)'); %home all axes on machine
 end
 function G55Button_Callback(hObject, eventdata, handles)
